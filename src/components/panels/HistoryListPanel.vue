@@ -18,14 +18,6 @@
                     </v-menu>
                 </v-item-group>
             </v-card-title>
-            <v-card-subtitle>
-                <v-tooltip top v-if="!boolAllData">
-                    <template v-slot:activator="{ on, attrs }">
-                        <span v-bind="attrs" v-on="on" @click="loadAllData" style="cursor: pointer;">{{ $t('History.Last14Days') }}</span>
-                    </template>
-                    <span>{{ $t('History.LoadAllHistoryData') }}</span>
-                </v-tooltip>
-            </v-card-subtitle>
             <v-card-text>
                 <v-text-field
                     v-model="search"
@@ -46,6 +38,7 @@
                 :items-per-page.sync="countPerPage"
                 :footer-props="{
                     itemsPerPageText: $t('History.Jobs'),
+                    itemsPerPageAllText: $t('History.AllJobs'),
                     itemsPerPageOptions: [10,25,50,100,-1]
                 }"
                 item-key="name"
@@ -61,8 +54,9 @@
                     <div class="text-center">{{ $t('History.Empty') }}</div>
                 </template>
 
-                <template #item="{ item }">
+                <template #item="{ index, item }">
                     <tr
+                        :key="`${index} ${item.filename}`"
                         v-longpress:600="(e) => showContextMenu(e, item)"
                         @contextmenu="showContextMenu($event, item)"
                         @click="clickRow(item)"
@@ -241,7 +235,6 @@
 <script>
 import {mapGetters, mapState} from 'vuex'
 import VueLoadImage from 'vue-load-image'
-import Vue from "vue";
 
     export default {
         components: {
@@ -255,26 +248,6 @@ import Vue from "vue";
                 sortDesc: true,
                 selected: [],
                 hideHeaderColums: [],
-                headers: [
-                    { text: '',                                     value: '',                align: 'left',  configable: false,  visible: true, filterable: false },
-                    { text: this.$t("History.Filename"),            value: 'filename',        align: 'left',  configable: false,  visible: true },
-                    { text: '',                                     value: 'status',          align: 'left',  configable: false,  visible: true, filterable: false },
-                    { text: this.$t("History.Filesize"),            value: 'size',            align: 'left',  configable: true,   visible: false },
-                    { text: this.$t("History.LastModified"),        value: 'modified',        align: 'left',  configable: true,  visible: false },
-                    { text: this.$t("History.StartTime"),           value: 'start_time',      align: 'left',  configable: true,  visible: true },
-                    { text: this.$t("History.EndTime"),             value: 'end_time',        align: 'left',  configable: true,  visible: false },
-                    { text: this.$t("History.EstimatedTime"),       value: 'estimated_time',  align: 'left',  configable: true,  visible: true },
-                    { text: this.$t("History.PrintTime"),           value: 'print_duration',  align: 'left', configable: true,  visible: true },
-                    { text: this.$t("History.TotalTime"),           value: 'total_duration',  align: 'left', configable: true,  visible: false },
-                    { text: this.$t("History.FilamentCalc"),        value: 'filament_total',  align: 'left', configable: true,  visible: false },
-                    { text: this.$t("History.FilamentUsed"),        value: 'filament_used',   align: 'left', configable: true,  visible: true },
-                    { text: this.$t("History.FirstLayerExtTemp"),   value: 'first_layer_extr_temp',   align: 'left', configable: true,  visible: false },
-                    { text: this.$t("History.FirstLayerBedTemp"),   value: 'first_layer_bed_temp',   align: 'left', configable: true,  visible: false },
-                    { text: this.$t("History.FirstLayerHeight"),    value: 'first_layer_height',   align: 'left', configable: true,  visible: false },
-                    { text: this.$t("History.LayerHeight"),         value: 'layer_height',    align: 'left', configable: true,  visible: false },
-                    { text: this.$t("History.ObjectHeight"),        value: 'object_height',   align: 'left', configable: true,  visible: false },
-                    { text: this.$t("History.Slicer"),              value: 'slicer',          align: 'left', configable: true,  visible: true },
-                ],
                 options: {
 
                 },
@@ -300,6 +273,28 @@ import Vue from "vue";
                 getStatusIcon: "server/history/getPrintStatusChipIcon",
                 getStatusColor: "server/history/getPrintStatusChipColor",
             }),
+            headers() {
+                return [
+                    { text: '',                                     value: '',                align: 'left',  configable: false,  visible: true, filterable: false },
+                    { text: this.$t("History.Filename"),            value: 'filename',        align: 'left',  configable: false,  visible: true },
+                    { text: '',                                     value: 'status',          align: 'left',  configable: false,  visible: true, filterable: false },
+                    { text: this.$t("History.Filesize"),            value: 'size',            align: 'left',  configable: true,   visible: true },
+                    { text: this.$t("History.LastModified"),        value: 'modified',        align: 'left',  configable: true,  visible: true },
+                    { text: this.$t("History.StartTime"),           value: 'start_time',      align: 'left',  configable: true,  visible: true },
+                    { text: this.$t("History.EndTime"),             value: 'end_time',        align: 'left',  configable: true,  visible: true },
+                    { text: this.$t("History.EstimatedTime"),       value: 'estimated_time',  align: 'left',  configable: true,  visible: true },
+                    { text: this.$t("History.PrintTime"),           value: 'print_duration',  align: 'left', configable: true,  visible: true },
+                    { text: this.$t("History.TotalTime"),           value: 'total_duration',  align: 'left', configable: true,  visible: true },
+                    { text: this.$t("History.FilamentCalc"),        value: 'filament_total',  align: 'left', configable: true,  visible: true },
+                    { text: this.$t("History.FilamentUsed"),        value: 'filament_used',   align: 'left', configable: true,  visible: true },
+                    { text: this.$t("History.FirstLayerExtTemp"),   value: 'first_layer_extr_temp',   align: 'left', configable: true,  visible: true },
+                    { text: this.$t("History.FirstLayerBedTemp"),   value: 'first_layer_bed_temp',   align: 'left', configable: true,  visible: true },
+                    { text: this.$t("History.FirstLayerHeight"),    value: 'first_layer_height',   align: 'left', configable: true,  visible: true },
+                    { text: this.$t("History.LayerHeight"),         value: 'layer_height',    align: 'left', configable: true,  visible: true },
+                    { text: this.$t("History.ObjectHeight"),        value: 'object_height',   align: 'left', configable: true,  visible: true },
+                    { text: this.$t("History.Slicer"),              value: 'slicer',          align: 'left', configable: true,  visible: true },
+                ]
+            },
             configHeaders() {
                 return this.headers.filter(header => header.configable === true)
             },
@@ -329,14 +324,17 @@ import Vue from "vue";
             },
         },
         mounted() {
-            this.hideColums.forEach((key) => {
-                let headerElement = this.headers.find(element => element.value === key)
-                if (headerElement) headerElement.visible = false
+            this.headers.forEach((header) => {
+                if (header.visible && this.hideColums.includes(header.value)) {
+                    header.visible = false
+                } else if (!header.visible && !this.hideColums.includes(header.value)) {
+                    header.visible = true
+                }
             })
         },
         methods: {
             refreshHistory: function() {
-                this.$socket.sendObj('server.history.list', {}, 'server/history/getHistory')
+                this.$socket.sendObj('server.history.list', { start: 0, limit: 50 }, 'server/history/getHistory')
             },
             formatDate(date) {
                 let tmp2 = new Date(date*1000)
@@ -493,16 +491,15 @@ import Vue from "vue";
 
                 return 400
             },
-            loadAllData() {
-                this.boolAllData = true
-                Vue.prototype.$socket.sendObj('server.history.list', { }, 'server/history/getHistory')
-            }
         },
         watch: {
             hideColums: function(newVal) {
-                newVal.forEach((key) => {
-                    let headerElement = this.headers.find(element => element.value === key)
-                    if (headerElement) headerElement.visible = false
+                this.headers.forEach((header) => {
+                    if (header.visible && newVal.includes(header.value)) {
+                        header.visible = false
+                    } else if (!header.visible && !newVal.includes(header.value)) {
+                        header.visible = true
+                    }
                 })
             }
         }

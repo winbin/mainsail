@@ -30,15 +30,56 @@
                                 <span @click="openCommitsOverlay(key, value)" :class="getVersionClickable(value) ? 'primary--text cursor--pointer' : ''"><v-icon v-if="getVersionClickable(value)" small color="primary" class="mr-1">mdi mdi-information</v-icon>{{ getVersionOutput(value) }}</span>
                             </v-col>
                             <v-col class="col-auto pr-6 text-right" align-self="center">
-                                <v-chip
-                                    small
-                                    label
-                                    outlined
-                                    :color="getBtnColor(value)"
-                                    @click="updateModule(key)"
-                                    :disabled="getBtnDisabled(value)"
-                                    class="minwidth-0 px-2 text-uppercase"
-                                ><v-icon small class="mr-1">mdi-{{ getBtnIcon(value) }}</v-icon>{{ getBtnText(value) }}</v-chip>
+                                <template v-if="getRecoveryOptions(value)">
+                                    <v-item-group>
+                                        <v-menu :offset-y="true" title="Webcam">
+                                            <template v-slot:activator="{ on, attrs }">
+                                                <v-chip
+                                                    small
+                                                    label
+                                                    outlined
+                                                    :color="getBtnColor(value)"
+                                                    :disabled="getBtnDisabled(value)"
+                                                    class="minwidth-0 px-2 text-uppercase"
+                                                    v-bind="attrs" v-on="on"
+                                                >
+                                                    <v-icon small class="mr-1">mdi-{{ getBtnIcon(value) }}</v-icon>
+                                                    {{ getBtnText(value) }}
+                                                    <v-icon small>mdi-menu-down</v-icon>
+                                                </v-chip>
+                                            </template>
+                                            <v-list dense class="py-0">
+                                                <v-list-item @click="recovery(key, false)">
+                                                    <v-list-item-icon class="mr-0">
+                                                        <v-icon small>mdi-reload</v-icon>
+                                                    </v-list-item-icon>
+                                                    <v-list-item-content>
+                                                        <v-list-item-title>Soft Recovery</v-list-item-title>
+                                                    </v-list-item-content>
+                                                </v-list-item>
+                                                <v-list-item @click="recovery(key,true)">
+                                                    <v-list-item-icon class="mr-0">
+                                                        <v-icon small>mdi-reload</v-icon>
+                                                    </v-list-item-icon>
+                                                    <v-list-item-content>
+                                                        <v-list-item-title>Hard Recovery</v-list-item-title>
+                                                    </v-list-item-content>
+                                                </v-list-item>
+                                            </v-list>
+                                        </v-menu>
+                                    </v-item-group>
+                                </template>
+                                <template v-else>
+                                    <v-chip
+                                        small
+                                        label
+                                        outlined
+                                        :color="getBtnColor(value)"
+                                        @click="updateModule(key)"
+                                        :disabled="getBtnDisabled(value)"
+                                        class="minwidth-0 px-2 text-uppercase"
+                                    ><v-icon small class="mr-1">mdi-{{ getBtnIcon(value) }}</v-icon>{{ getBtnText(value) }}</v-chip>
+                                </template>
                             </v-col>
                         </v-row>
                     </div>
@@ -64,7 +105,7 @@
                                     :disabled="!(version_info.system.package_count) || printer_state === 'printing'"
                                     @click="updateSystem"
                                     class="minwidth-0 px-2 text-uppercase"
-                                ><v-icon small class="mr-1">mdi-{{ version_info.system.package_count ? 'progress-upload' : 'check' }}</v-icon>{{ version_info.system.package_count ? 'upgrade' : 'up-to-date' }}</v-chip>
+                                ><v-icon small class="mr-1">mdi-{{ version_info.system.package_count ? 'progress-upload' : 'check' }}</v-icon>{{ version_info.system.package_count ? $t('Settings.UpdatePanel.Upgrade') : $t('Settings.UpdatePanel.UpToDate') }}</v-chip>
                             </v-col>
                         </v-row>
                     </div>
@@ -159,6 +200,13 @@
                         semver.gt(object.remote_version, object.version)
                     ) return 'primary'
 
+                    if (
+                        'version' in object &&
+                        'remote_version' in object && (
+                            object.version === "?" || object.remote_version === "?"
+                        )
+                    ) return 'orange'
+
                     return 'green'
                 }
 
@@ -171,9 +219,9 @@
                         !object.debug_enabled &&
                         'detached' in object &&
                         object.detached
-                    ) return 'detached'
-                    if ('is_valid' in object && !object.is_valid) return 'invalid'
-                    if ('is_dirty' in object && object.is_dirty) return 'dirty'
+                    ) return this.$t('Settings.UpdatePanel.Detached')
+                    if ('is_valid' in object && !object.is_valid) return this.$t('Settings.UpdatePanel.Invalid')
+                    if ('is_dirty' in object && object.is_dirty) return this.$t('Settings.UpdatePanel.Dirty')
 
                     if (
                         'version' in object &&
@@ -181,7 +229,14 @@
                         semver.valid(object.remote_version) &&
                         semver.valid(object.version) &&
                         semver.gt(object.remote_version, object.version)
-                    ) return 'update'
+                    ) return this.$t('Settings.UpdatePanel.Update')
+
+                    if (
+                        'version' in object &&
+                        'remote_version' in object && (
+                            object.version === "?" || object.remote_version === "?"
+                        )
+                    ) return this.$t('Settings.UpdatePanel.Unknown')
 
                     return this.$t('Settings.UpdatePanel.UpToDate')
                 }
@@ -207,6 +262,13 @@
                         semver.gt(object.remote_version, object.version)
                     ) return 'progress-upload'
 
+                    if (
+                        'version' in object &&
+                        'remote_version' in object && (
+                            object.version === "?" || object.remote_version === "?"
+                        )
+                    ) return 'help-circle-outline'
+
                     return 'check'
                 }
 
@@ -214,15 +276,11 @@
             },
             getBtnDisabled(object) {
                 if (['printing', 'paused'].includes(this.printer_state)) return true
-                if (
-                    'debug_enabled' in object &&
-                    !object.debug_enabled &&
-                    'detached' in object &&
-                    object.detached
-                ) return true
+
+                if ('is_valid' in object && !object.is_valid) return false
+                if ('is_dirty' in object && object.is_dirty) return false
 
                 if (typeof object === 'object' && object !== false) {
-                    if ('is_valid' in object && !object.is_valid) return true
                     if (
                         'version' in object &&
                         'remote_version' in object &&
@@ -249,6 +307,8 @@
 
                 if (semver.valid(remote_version) && semver.valid(local_version) && semver.gt(remote_version, local_version))
                     output += local_version+" > "+remote_version
+                else if ('full_version_string' in object && object.full_version_string !== '?')
+                    output += object.full_version_string
                 else
                     output += local_version
 
@@ -260,9 +320,18 @@
                     object.commits_behind.length
                 )
             },
+            getRecoveryOptions(object) {
+                if ('is_valid' in object && !object.is_valid) return true
+                if ('is_dirty' in object && object.is_dirty) return true
+
+                return false
+            },
             updateModule(key) {
                 if (["klipper", "moonraker"].includes(key)) this.$socket.sendObj('machine.update.'+key, { })
                 else this.$socket.sendObj('machine.update.client', { name: key })
+            },
+            recovery(name, hard) {
+                this.$socket.sendObj('machine.update.recover', { name: name, hard: hard })
             },
             updateSystem() {
                 this.$socket.sendObj('machine.update.system', { })

@@ -81,6 +81,7 @@ export default {
 						additionValues: getters.getAdditionSensors(nameSplit[1]),
 						tempListAdditionValues: getters.getTempListAdditionSensors(nameSplit[1]),
 						power: 'power' in value ? value.power : null,
+						avgPower: getters["tempHistory/getAvgPower"](name),
 						presets: rootGetters["gui/getPresetsFromHeater"]({ name: key }),
 						chartColor: getters["tempHistory/getDatasetColor"](name),
 						chartTemperature: getters["tempHistory/getSeries"](name),
@@ -111,6 +112,7 @@ export default {
 					additionValues: getters.getAdditionSensors(nameSplit[1]),
 					tempListAdditionValues: getters.getTempListAdditionSensors(nameSplit[1]),
 					speed: value.speed,
+					avgSpeed: getters["tempHistory/getAvgSpeed"](name),
 					rpm: 'rpm' in value ? value.rpm : false,
 					presets: rootGetters["gui/getPresetsFromHeater"]({ name: key }),
 					chartColor: getters["tempHistory/getDatasetColor"](nameSplit[1]),
@@ -454,18 +456,24 @@ export default {
 
 	getExtrudePossible: state => {
 		if ("toolhead" in state) {
-			let extruderName = state.toolhead.extruder;
+			const extruderName = state.toolhead.extruder
 
-			if (extruderName in state && extruderName in state.configfile.config) {
-				let extruder = state[extruderName];
-				let extruderConfig = state.configfile.config[extruderName];
-				let min_extrude_temp = "min_extrude_temp" in extruderConfig ? extruderConfig["min_extrude_temp"] : 170
+			if (extruderName in state && extruderName in state.configfile.settings) {
+				const extruder = state[extruderName]
+				const extruderSettings = state.configfile.settings[extruderName]
+				let min_extrude_temp = "min_extrude_temp" in extruderSettings ? extruderSettings["min_extrude_temp"] : 170
+
+				if (
+					"shared_heater" in extruderSettings &&
+					extruderSettings["shared_heater"] in state.configfile.settings &&
+					"min_extrude_temp" in state.configfile.settings[extruderSettings["shared_heater"]]
+				) min_extrude_temp = state.configfile.settings[extruderSettings["shared_heater"]]["min_extrude_temp"]
 
 				return  (min_extrude_temp <= extruder["temperature"])
 			}
 		}
 
-		return true;
+		return true
 	},
 
 	getBedMeshProfileName: state => {
@@ -574,6 +582,25 @@ export default {
 		) {
 			return (state.current_file.estimated_time - state.print_stats.print_duration).toFixed(0)
 		}
+
+		return 0
+	},
+
+	getEstimatedTimeAvg: (state, getters) => {
+		let time = 0
+		let timeCount = 0
+
+		if (getters.getEstimatedTimeFile > 0) {
+			time += parseInt(getters.getEstimatedTimeFile)
+			timeCount++
+		}
+
+		if (getters.getEstimatedTimeFilament > 0) {
+			time += parseInt(getters.getEstimatedTimeFilament)
+			timeCount++
+		}
+
+		if (time && timeCount) return (time / timeCount)
 
 		return 0
 	},

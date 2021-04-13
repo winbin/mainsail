@@ -105,29 +105,15 @@
     </div>
 </template>
 <script>
-    import { mapState, mapGetters } from 'vuex';
-    import Vue from "vue";
-    import { colorConsoleMessage, formatConsoleMessage } from "@/plugins/helpers";
+    import { mapState, mapGetters } from 'vuex'
+    import { colorConsoleMessage, formatConsoleMessage } from "@/plugins/helpers"
 
     export default {
+        name: "console",
         data () {
             return {
                 gcode: "",
                 sortBy: 'date',
-                headers: [
-                    {
-                        text: this.$t('Console.Date'),
-                        value: 'date',
-                        width: '15%',
-                        dateType: 'Date',
-                    },
-                    {
-                        text: this.$t('Console.Event'),
-                        sortable: false,
-                        value: 'message',
-                        width: '85%'
-                    },
-                ],
                 options: {
 
                 },
@@ -146,10 +132,24 @@
             ...mapGetters([
 
             ]),
-            events: {
-                get() {
-                    return this.$store.getters["server/getFilterdEvents"]
-                }
+            headers() {
+                return [
+                    {
+                        text: this.$t('Console.Date'),
+                        value: 'date',
+                        width: '15%',
+                        dateType: 'Date',
+                    },
+                    {
+                        text: this.$t('Console.Event'),
+                        sortable: false,
+                        value: 'message',
+                        width: '85%'
+                    },
+                ]
+            },
+            events() {
+                return this.$store.getters["server/getFilterdEvents"]
             },
             hideWaitTemperatures: {
                 get() {
@@ -170,9 +170,8 @@
         },
         methods: {
             doSend() {
-                this.$store.commit('socket/addLoading', { name: 'sendGcode' });
-                this.$store.commit('server/addEvent', { message: this.gcode, type: 'command' });
-                Vue.prototype.$socket.sendObj('printer.gcode.script', { script: this.gcode }, "socket/removeLoading", { name: 'sendGcode' });
+                this.$store.dispatch('printer/sendGcode', this.gcode)
+
                 this.lastCommands.push(this.gcode);
                 this.gcode = "";
                 this.lastCommandNumber = null;

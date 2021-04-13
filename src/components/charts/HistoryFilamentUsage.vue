@@ -11,6 +11,7 @@ export default {
 
     },
     data: function() {
+        let _this = this;
         return {
             chart : null,
             chartOptions: {
@@ -30,13 +31,12 @@ export default {
 
                         if (datasets.length) {
                             output = datasets[0]['marker']
-                            let outputTime = datasets[0]['axisValueLabel']
-                            outputTime = outputTime.substr(0, outputTime.indexOf(" ")+1)
-                            let outputTimeDate = new Date(outputTime)
-                            outputTime = outputTimeDate.toLocaleDateString()
-                            let outputValue = Math.round(datasets[0]['data'][1] * 10) / 10
+                            const outputTime = datasets[0]['axisValueLabel']
+                            const a = outputTime.split(/[^0-9]/)
+                            const outputTimeDate = new Date (a[0],a[1]-1, a[2])
+                            const outputValue = Math.round(datasets[0]['data'][1] * 10) / 10
 
-                            output += outputTime+": "+outputValue+"m"
+                            output += outputTimeDate.toLocaleDateString()+": "+outputValue+"m"
                         }
 
                         return output
@@ -59,7 +59,7 @@ export default {
                     },
                 },
                 yAxis: {
-                    name: 'Filament [m]',
+                    name: _this.$t('History.HistoryFilamentUsage'),
                     type: 'value',
                     minInterval: 10,
                     maxInterval: 100,

@@ -12,6 +12,7 @@ export default {
 
     },
     data: function() {
+        let _this = this;
         return {
             chart : null,
             timerChart: '',
@@ -117,7 +118,7 @@ export default {
                 },
                 yAxis: [
                     {
-                        name: 'Temperature [°C]',
+                        name: _this.$t('Panels.ToolsPanel.TemperaturesInChart'),
                         type: 'value',
                         min: 0,
                         max: 300,
@@ -304,14 +305,18 @@ export default {
             if(isVisible && this.chart !== null) this.chart.resize()
             if(this.chart !== null) this.updateChart()
         },
+        resize() {
+            this.chart?.resize();
+        }
     },
     created() {
-        window.addEventListener('resize', () => {
-            if (this.chart) this.chart.resize()
-        })
+        window.addEventListener('resize', this.resize)
     },
     mounted: function() {
         this.createChart()
     },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.resize);
+    }
 }
 </script>
